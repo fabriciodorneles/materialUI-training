@@ -1,11 +1,8 @@
 import React from 'react';
+import { Button } from '@material-ui/core';
 
 function App() {
-  return (
-    <div className="App">
-<h1>Hello World</h1>
-    </div>
-  );
+  return <Button color="primary">Hello World</Button>;
 }
 
 export default App;
