@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import {useQuery, gql} from '@apollo/client';
+import {useQuery, gql, NetworkStatus, useLazyQuery} from '@apollo/client';
 
 const EXCHANGE_RATES = gql `
 query GetDogs {
@@ -38,18 +38,40 @@ function Dogs({onDogSelected}) {
 }
 
 function DogPhoto({breed}) {
-  const { loading, error, data } = useQuery(GET_DOG_PHOTO, {
+  const { loading, error, data, refetch, networkStatus } = useQuery(GET_DOG_PHOTO, {
     variables: { breed },
+    // pollInterval: 500,
+    notifyOnNetworkStatusChange:true
   });
 
+  if (networkStatus === NetworkStatus.refetch) return 'Refetching!';
   if (loading) return null;
   if (error) return `Error! ${error}`;
 
   return (
-    <img src={data.dog.displayImage} style={{ height: 100, width: 100 }} alt={data.dog.name} />
+    <div>
+          <img src={data.dog.displayImage} style={{ height: 100, width: 100 }} alt={data.dog.name} />
+    <button onClick={() => refetch()}>Refetch!</button>
+    </div>
   );
 
 }
+
+function DelayedQuery() {
+  const [getDog, { loading, data }] = useLazyQuery(GET_DOG_PHOTO);
+
+  if (loading) return <p>Loading ...</p>;
+
+  return (
+    <div>
+      {data && data.dog && <img src={data.dog.displayImage} alt={data.dog.name} />}
+      <button onClick={() => getDog({ variables: { breed: 'bulldog' } })}>
+        Click me!
+      </button>
+    </div>
+  );
+}
+
 
 
 function App() {
@@ -64,6 +86,7 @@ function App() {
         <h2>My first Apollo app <span role="img" aria-label="Rocket">🚀</span></h2>
         <Dogs onDogSelected={onDogSelected}></Dogs>
         {dogBreed && <DogPhoto breed={dogBreed} ></DogPhoto>}
+        <DelayedQuery/>
       </div>
   );
 }
