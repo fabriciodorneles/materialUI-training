@@ -1,94 +1,94 @@
 import React, { useState } from 'react';
-import {useQuery, gql, NetworkStatus, useLazyQuery} from '@apollo/client';
+import {useQuery, gql, NetworkStatus, useLazyQuery, useMutation} from '@apollo/client';
 
-const EXCHANGE_RATES = gql `
-query GetDogs {
-  dogs {
-    id
-    breed
+const GET_TODOS = gql`
+  {
+    todos {
+      id
+      type
+    }
   }
-}
 `;
 
-const GET_DOG_PHOTO = gql`
-query Dog($breed: String!) {
-  dog(breed: $breed) {
-    id
-    displayImage
+const ADD_TODO = gql`
+  mutation AddTodo($type: String!) {
+    addTodo(type: $type) {
+      id
+      type
+    }
   }
-}
 `;
 
+const UPDATE_TODO = gql`
+  mutation UpdateTodo($id: String!, $type: String!) {
+    updateTodo(id: $id, type: $type) {
+      id
+      type
+    }
+  }
+`;
 
-function Dogs({onDogSelected}) {
-  const { loading, error, data } = useQuery(EXCHANGE_RATES);
+function Todos() {
+  const { loading, error, data } = useQuery(GET_TODOS);
+  const [updateTodo] = useMutation(UPDATE_TODO);
 
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error :(</p>;
-  
+    console.log(data);
+  return data.todos.map(({ id, type }) => {
+    let input;
+
     return (
-      <select name="dog" onChange={onDogSelected}>
-        {data.dogs.map(dog => (
-          <option key={dog.id} value={dog.breed}>
-            {dog.breed}
-          </option>
-        ))}
-      </select>
+      <div key={id}>
+        <p>{type}</p>
+        <form
+          onSubmit={e => {
+            e.preventDefault();
+            updateTodo({ variables: { id, type: input.value } });
+            input.value = "";
+          }}
+        >
+          <input
+            ref={node => {
+              input = node;
+            }}
+          />
+          <button type="submit">Update Todo</button>
+        </form>
+      </div>
     );
-}
-
-function DogPhoto({breed}) {
-  const { loading, error, data, refetch, networkStatus } = useQuery(GET_DOG_PHOTO, {
-    variables: { breed },
-    // pollInterval: 500,
-    notifyOnNetworkStatusChange:true
   });
+}
 
-  if (networkStatus === NetworkStatus.refetch) return 'Refetching!';
-  if (loading) return null;
-  if (error) return `Error! ${error}`;
+function AddTodo() {
+  let input;
+  const [addTodo, {data}] = useMutation(ADD_TODO);
 
   return (
     <div>
-          <img src={data.dog.displayImage} style={{ height: 100, width: 100 }} alt={data.dog.name} />
-    <button onClick={() => refetch()}>Refetch!</button>
-    </div>
-  );
-
-}
-
-function DelayedQuery() {
-  const [getDog, { loading, data }] = useLazyQuery(GET_DOG_PHOTO);
-
-  if (loading) return <p>Loading ...</p>;
-
-  return (
-    <div>
-      {data && data.dog && <img src={data.dog.displayImage} alt={data.dog.name} />}
-      <button onClick={() => getDog({ variables: { breed: 'bulldog' } })}>
-        Click me!
-      </button>
+      <form onSubmit={e => {
+        e.preventDefault();
+        addTodo({ variables: {type: input.value }});
+        input.value = '';
+      }}>
+        <input 
+          ref={node => {
+            input=node
+          }}
+        />
+        <button type="submit" >Add Todo</button>
+      </form>
     </div>
   );
 }
-
-
 
 function App() {
-  const [dogBreed, setDogBreed] = useState(null);
-
-  function onDogSelected({ target }) {
-    setDogBreed(target.value);
-  }
-
-  return (
-      <div>
-        <h2>My first Apollo app <span role="img" aria-label="Rocket">🚀</span></h2>
-        <Dogs onDogSelected={onDogSelected}></Dogs>
-        {dogBreed && <DogPhoto breed={dogBreed} ></DogPhoto>}
-        <DelayedQuery/>
-      </div>
-  );
+return (
+  <> 
+  <AddTodo></AddTodo>
+  <Todos></Todos>
+  </>
+);
 }
 
 export default App;
